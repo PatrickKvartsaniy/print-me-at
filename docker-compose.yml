@@ -4,11 +4,10 @@ services:
     image: redis:latest
     ports:
       - 6379:6379
-
   print-me-at:
     image: print-me-at:latest
     environment:
-      REDIS_ADDRESS: redis://redis:6379
+      - REDIS_ADDRESS=redis
     depends_on:
       - redis
     links:

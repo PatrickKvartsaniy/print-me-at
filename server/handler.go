@@ -2,37 +2,42 @@ package server
 
 import (
 	"fmt"
+	"github.com/PatrickKvartsaniy/print-me-at/models"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
 
 func (s Server) messageScheduler(w http.ResponseWriter, r *http.Request) {
-	msg, ts, err := parseQueryParams(r)
+	msg, err := parseQueryParams(r)
 	if err != nil {
 		logrus.WithError(err).Error("parsing query params")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	if err := s.repo.AddNewTask(msg, ts); err != nil {
+	if err := s.repo.AddNewTask(msg); err != nil {
 		logrus.WithError(err).Error("adding new message to the queue")
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
 }
 
-func parseQueryParams(r *http.Request) (string, time.Time, error) {
+func parseQueryParams(r *http.Request) (models.Message, error) {
 	msg := r.URL.Query().Get("msg")
 	if len(msg) == 0 {
-		return "", time.Time{}, fmt.Errorf("message is missing")
+		return models.Message{}, fmt.Errorf("message is missing")
 	}
 	ts := r.URL.Query().Get("ts")
 	if len(ts) == 0 {
-		return "", time.Time{}, fmt.Errorf("time is missing")
+		return models.Message{}, fmt.Errorf("time is missing")
 	}
 	formattedTime, err := time.Parse(time.RFC3339, ts)
 	if err != nil {
-		return "", time.Time{}, err
+		return models.Message{}, err
 	}
-	return msg, formattedTime, nil
+	return models.Message{
+		ID:        uuid.NewV4().String(),
+		Value:     msg,
+		Timestamp: formattedTime.Unix(),
+	}, nil
 }

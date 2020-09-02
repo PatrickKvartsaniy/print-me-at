@@ -36,10 +36,10 @@ dockerise:
 
 .PHONY: service-up
 service-up:
-	dockerise
 	$(DOCKER_COMPOSE) rm --force --stop -v
-	$(DOCKER_COMPOSE) up -d --force-recreate --build
+	$(DOCKER_COMPOSE) up -d --force-recreate --remove-orphans --build
 
 .PHONY: service-down
 service-down:
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans
 	$(DOCKER_COMPOSE) rm --force --stop -v

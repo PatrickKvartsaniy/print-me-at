@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"time"
-
+	"github.com/PatrickKvartsaniy/print-me-at/models"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
 type Repository interface {
-	AddNewTask(msg string, ts time.Time) error
+	AddNewTask(msg models.Message) error
 	Poll(ctx context.Context)
 }
 

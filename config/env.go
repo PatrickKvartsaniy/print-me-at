@@ -10,10 +10,11 @@ func ReadOS() Config {
 	viper.SetDefault("LOG_LEVEL", "DEBUG")
 
 	viper.SetDefault("HEALTH_CHECK_PORT", 8888)
-	viper.SetDefault("SERVER_PORT", "8080")
+	viper.SetDefault("SERVER_PORT", 8080)
 
-	viper.SetDefault("REDIS_POLLING_INTERVAL", 1)
+	viper.SetDefault("REDIS_POLLING_INTERVAL", "1s")
 	viper.SetDefault("REDIS_KEY", "scheduled_messages")
+	viper.SetDefault("REDIS_ADDRESS", "0.0.0.0:6379")
 
 	return Config{
 		Port: viper.GetInt("SERVER_PORT"),

@@ -2,9 +2,13 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/PatrickKvartsaniy/print-me-at/models"
 	"github.com/go-redis/redis/v7"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"time"
 )
 
@@ -21,21 +25,31 @@ type (
 		Key             string
 		PollingInterval time.Duration
 	}
+
+	Message struct {
+		Value     string `json:"value"`
+		Timestamp int64  `json:"timestamp"`
+	}
 )
 
 func NewRedisRepository(cfg RedisConfig) *Repository {
+	logrus.Debug(cfg)
 	client := redis.NewClient(&redis.Options{
 		Addr: cfg.Addr,
 	})
 	return &Repository{
-		redis: client,
-		key: cfg.Key,
+		redis:           client,
+		key:             cfg.Key,
 		pollingInterval: cfg.PollingInterval,
 	}
 }
 
-func (r Repository) AddNewTask(msg string, ts time.Time) error {
-	if err := r.redis.ZAdd(r.key, &redis.Z{Score: 0, Member: ts.Second()}, &redis.Z{Score: 1, Member: msg}).Err(); err != nil {
+func (r Repository) AddNewTask(m models.Message) error {
+	msg, err := m.ToJSONString()
+	if err != nil {
+		return fmt.Errorf("marshaling message: %w", err)
+	}
+	if err := r.redis.ZAdd(r.key, &redis.Z{Score: float64(m.Timestamp), Member: msg}).Err(); err != nil {
 		return fmt.Errorf("adding msg to the queue: %w", err)
 	}
 	return nil
@@ -66,7 +80,7 @@ func (r Repository) poll(ctx context.Context) error {
 }
 
 func (r Repository) checkForTasks() error {
-	res := r.redis.ZRange(r.key, 0, int64(time.Now().Second()))
+	res := r.redis.ZRangeByScore(r.key, &redis.ZRangeBy{Min: "0", Max: strconv.Itoa(int(time.Now().Unix()))})
 	if err := res.Err(); err != nil {
 		return fmt.Errorf("checking for the tasks: %w", err)
 	}
@@ -74,8 +88,19 @@ func (r Repository) checkForTasks() error {
 	if err != nil {
 		return err
 	}
+	return r.processTask(tasks)
+}
+
+func (r Repository) processTask(tasks []string) error {
 	for _, task := range tasks {
-		fmt.Println("scheduled message: " + task)
+		var msg models.Message
+		if err := json.Unmarshal([]byte(task), &msg); err != nil {
+			return fmt.Errorf("unmarshaling message: %w", err)
+		}
+		msg.PrintOut()
+		if err := r.redis.ZRem(r.key, task).Err(); err != nil {
+			return fmt.Errorf("message has been received but can't be deleted: %w", err)
+		}
 	}
 	return nil
 }
@@ -87,5 +112,11 @@ func (r Repository) Close() {
 }
 
 func (r Repository) HealthCheck() error {
-	return r.redis.Ping().Err()
+	if err := r.redis.Ping().Err(); err != nil {
+		return errors.New("redis is not responding")
+	}
+	if r.runErr != nil {
+		return r.runErr
+	}
+	return nil
 }
