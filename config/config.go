@@ -6,6 +6,8 @@ type Config struct {
 	Port            int
 	Redis           repository.RedisConfig
 	HealthCheckPort int
+	PrettyLogOutput bool
+	LogLevel        string
 }
 
 func ReadOS() Config {

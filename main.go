@@ -9,12 +9,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
 
 func main() {
 	cfg := config.ReadOS()
+	initLogger(cfg.LogLevel, cfg.PrettyLogOutput)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	setupGracefulShutdown(cancel)
@@ -48,4 +50,20 @@ func setupGracefulShutdown(stop func()) {
 		logrus.Println("Got Interrupt signal")
 		stop()
 	}()
+}
+
+func initLogger(logLevel string, pretty bool) {
+	if pretty {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	}
+	logrus.SetOutput(os.Stderr)
+
+	switch strings.ToLower(logLevel) {
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "info":
+		logrus.SetLevel(logrus.InfoLevel)
+	default:
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 }
