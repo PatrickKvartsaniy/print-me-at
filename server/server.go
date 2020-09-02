@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Repository interface {
-	AddNewTask(ctx context.Context, msg string) error
+	AddNewTask(msg string, ts time.Time) error
+	Poll(ctx context.Context)
 }
 
 type Server struct {
@@ -20,16 +22,18 @@ type Server struct {
 	repo      Repository
 }
 
-func CreateAndRun(port int) *Server {
+func CreateAndRun(ctx context.Context, port int, repo Repository) *Server {
 	service := &Server{
 		http: &http.Server{
 			Addr: fmt.Sprintf(":%d", port),
 		},
+		repo: repo,
 	}
 
 	service.setupHandlers()
 
 	service.run()
+	service.repo.Poll(ctx)
 
 	return service
 }
@@ -45,10 +49,10 @@ func (s *Server) run() {
 	log.Info("server is running")
 
 	go func() {
-		log.Debug("graphql service: addr=", s.http.Addr)
+		log.Debug("http service: addr=", s.http.Addr)
 		if err := s.http.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.runErr = err
-			log.WithError(err).Error("graphql service")
+			log.WithError(err).Error("http service")
 		}
 	}()
 	s.readiness = true
@@ -56,9 +60,9 @@ func (s *Server) run() {
 
 func (s *Server) Close(ctx context.Context) {
 	if err := s.http.Shutdown(ctx); err != nil {
-		log.WithError(err).Error("stopping graphql service")
+		log.WithError(err).Error("stopping http service")
 	}
-	log.Info("graphql service stopped")
+	log.Info("http service stopped")
 }
 
 func (s *Server) HealthCheck() error {

@@ -13,6 +13,7 @@ type (
 		redis           *redis.Client
 		key             string
 		pollingInterval time.Duration
+		runErr          error
 	}
 
 	RedisConfig struct {
@@ -29,14 +30,24 @@ func NewRedisRepository(cfg RedisConfig) *Repository {
 	return &Repository{redis: client}
 }
 
-func (r Repository) AddNewTask(ctx context.Context, msg string, ts time.Time) error {
+func (r Repository) AddNewTask(msg string, ts time.Time) error {
 	if err := r.redis.ZAdd(r.key, &redis.Z{Score: 0, Member: ts.Second()}, &redis.Z{Score: 1, Member: msg}).Err(); err != nil {
 		return fmt.Errorf("adding msg to the queue: %w", err)
 	}
 	return nil
 }
 
-func (r Repository) Poll(ctx context.Context) error {
+func (r Repository) Poll(ctx context.Context) {
+	logrus.Info("start polling")
+	go func() {
+		if err := r.poll(ctx); err != nil {
+			r.runErr = err
+			logrus.WithError(err).Error("redis service")
+		}
+	}()
+}
+
+func (r Repository) poll(ctx context.Context) error {
 	ticker := time.NewTicker(r.pollingInterval)
 	for {
 		select {
