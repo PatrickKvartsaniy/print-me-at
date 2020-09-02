@@ -2,6 +2,8 @@ export GO111MODULE=on
 export GOSUMDB=off
 export GOPROXY=direct
 
+DOCKER_COMPOSE = docker-compose -f docker-compose.yml
+
 .PHONY: all
 all: deps gen build lint test dockerise
 
@@ -30,4 +32,14 @@ lint:
 
 .PHONY: dockerise
 dockerise:
-	docker build .
+	docker build -t "print-me-at:latest" .
+
+.PHONY: service-up
+service-up:
+	dockerise
+	$(DOCKER_COMPOSE) rm --force --stop -v
+	$(DOCKER_COMPOSE) up -d --force-recreate --build
+
+.PHONY: service-down
+service-down:
+	$(DOCKER_COMPOSE) rm --force --stop -v

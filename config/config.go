@@ -9,7 +9,3 @@ type Config struct {
 	PrettyLogOutput bool
 	LogLevel        string
 }
-
-func ReadOS() Config {
-	return Config{}
-}

@@ -27,7 +27,11 @@ func NewRedisRepository(cfg RedisConfig) *Repository {
 	client := redis.NewClient(&redis.Options{
 		Addr: cfg.Addr,
 	})
-	return &Repository{redis: client}
+	return &Repository{
+		redis: client,
+		key: cfg.Key,
+		pollingInterval: cfg.PollingInterval,
+	}
 }
 
 func (r Repository) AddNewTask(msg string, ts time.Time) error {

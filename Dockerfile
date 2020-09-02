@@ -14,7 +14,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/svc /svc
 
 # Port on which the service will be exposed.
-EXPOSE 8080
+EXPOSE 8080 8888
 
 # Run the svc binary.
 CMD ["./svc"]
