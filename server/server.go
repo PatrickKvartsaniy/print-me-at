@@ -40,7 +40,7 @@ func CreateAndRun(ctx context.Context, port int, repo Repository) *Server {
 
 func (s *Server) setupHandlers() {
 	h := http.NewServeMux()
-	handler := http.HandlerFunc(messageScheduler)
+	handler := http.HandlerFunc(s.messageScheduler)
 	h.Handle("/printMeAt", correlationID(loggingMiddleware(handler)))
 	s.http.Handler = h
 }
