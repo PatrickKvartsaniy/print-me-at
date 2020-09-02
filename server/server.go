@@ -10,14 +10,14 @@ import (
 )
 
 type Repository interface {
-
+	AddNewTask(ctx context.Context, msg string) error
 }
 
 type Server struct {
 	http      *http.Server
 	runErr    error
 	readiness bool
-	repo Repository
+	repo      Repository
 }
 
 func CreateAndRun(port int) *Server {
