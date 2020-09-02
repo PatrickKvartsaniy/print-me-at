@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
-	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type (
@@ -21,7 +19,7 @@ type (
 	Check func() error
 )
 
-func New(port int, checks []Check) *Server {
+func CreateAndRun(port int, checks []Check) *Server {
 	service := &Server{
 		http: &http.Server{
 			Addr: fmt.Sprintf(":%d", port),
@@ -30,6 +28,7 @@ func New(port int, checks []Check) *Server {
 	}
 
 	service.setupHandlers()
+	service.run()
 
 	return service
 }
@@ -42,31 +41,28 @@ func (s *Server) setupHandlers() {
 	s.http.Handler = handler
 }
 
-func (s *Server) Run(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	log.Info("health check service: starting")
+func (s *Server) run() {
+	logrus.Info("health check starting")
 
 	go func() {
-		defer wg.Done()
-		log.Debug("health check service: addr=", s.http.Addr)
-		err := s.http.ListenAndServe()
-		s.runErr = err
-		log.Info("health check service: end running > ", err)
-	}()
-
-	go func() {
-		<-ctx.Done()
-		sdCtx, _ := context.WithTimeout(context.Background(), 5*time.Second) // nolint
-		err := s.http.Shutdown(sdCtx)
-		if err != nil {
-			log.Info("health check service shutdown (", err, ")")
+		logrus.Debug("health check service: addr=", s.http.Addr)
+		if err := s.http.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.runErr = err
+			logrus.WithError(err).Error("health check service")
 		}
 	}()
 
 	s.readiness = true
 }
 
-func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Close(ctx context.Context) {
+	if err := s.http.Shutdown(ctx); err != nil {
+		logrus.WithError(err).Error("health check service shutdown")
+	}
+	logrus.Info("health check service stopped")
+}
+
+func (s *Server) serve(w http.ResponseWriter, _ *http.Request) {
 	errs := make([]error, 0)
 	for _, check := range s.checks {
 		if err := check(); err != nil {
@@ -78,11 +74,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 
 		for _, err := range errs {
-			log.Errorf("health check received error: %s", err.Error())
-
 			_, errWrite := w.Write([]byte(fmt.Sprintf("%s\n", err.Error())))
 			if errWrite != nil {
-				log.Errorf("health check response write error: %s", errWrite.Error())
+				logrus.Errorf("health check response write error: %s", errWrite.Error())
 			}
 		}
 

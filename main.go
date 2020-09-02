@@ -6,24 +6,46 @@ import (
 	"github.com/PatrickKvartsaniy/print-me-at/health"
 	"github.com/PatrickKvartsaniy/print-me-at/repository"
 	"github.com/PatrickKvartsaniy/print-me-at/server"
-	"sync"
+	"github.com/sirupsen/logrus"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
-	ctx := context.Background()
 	cfg := config.ReadOS()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	setupGracefulShutdown(cancel)
 
 	repo := repository.NewRedisRepository(cfg.Redis)
 	defer repo.Close()
 
 	srv := server.CreateAndRun(ctx, cfg.Port, repo)
-	defer srv.Close(ctx)
+	defer closeWithTimeout(srv.Close, 5)
 
-	healthCheckSrv := health.New(cfg.HealthCheckPort, []health.Check{
+	healthCheckSrv := health.CreateAndRun(cfg.HealthCheckPort, []health.Check{
 		repo.HealthCheck,
 		srv.HealthCheck,
 	})
-	var wg sync.WaitGroup
-	healthCheckSrv.Run(ctx, &wg)
-	wg.Wait()
+	defer closeWithTimeout(healthCheckSrv.Close, 5)
+
+	<-ctx.Done()
+}
+
+func closeWithTimeout(close func(context.Context), d time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), d)
+	defer cancel()
+	close(ctx)
+}
+
+func setupGracefulShutdown(stop func()) {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-signalChannel
+		logrus.Println("Got Interrupt signal")
+		stop()
+	}()
 }
