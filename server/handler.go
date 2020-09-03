@@ -14,7 +14,7 @@ func (s Server) messageScheduler(w http.ResponseWriter, r *http.Request) {
 	msg, err := parseQueryParams(r)
 	if err != nil {
 		logrus.WithError(err).Error("parsing query params")
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if err := s.repo.AddNewTask(msg); err != nil {

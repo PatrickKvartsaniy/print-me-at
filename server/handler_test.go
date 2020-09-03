@@ -46,7 +46,7 @@ func (s TestSuite) Test_ServerMessageScheduler(t *testing.T) {
 	}{
 		{
 			url:          "/printMeAt",
-			expectedCode: http.StatusUnprocessableEntity,
+			expectedCode: http.StatusBadRequest,
 		},
 		{
 			url:          fmt.Sprintf("/printMeAt?msg=%s&ts=%s", msg, ts),
