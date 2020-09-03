@@ -5,16 +5,11 @@ export GOPROXY=direct
 DOCKER_COMPOSE = docker-compose -f docker-compose.yml
 
 .PHONY: all
-all: deps gen build lint test dockerise
+all: deps build lint test dockerise
 
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -mod=vendor -a -o artifacts/svc .
-
-.PHONY: gen
-gen:
-	go get github.com/99designs/gqlgen
-	go run -mod=mod github.com/99designs/gqlgen generate
 
 .PHONY: deps
 deps:
