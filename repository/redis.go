@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/PatrickKvartsaniy/print-me-at/models"
 	"github.com/go-redis/redis/v7"
@@ -24,11 +23,6 @@ type (
 		Addr            string
 		Key             string
 		PollingInterval time.Duration
-	}
-
-	Message struct {
-		Value     string `json:"value"`
-		Timestamp int64  `json:"timestamp"`
 	}
 )
 
@@ -113,7 +107,7 @@ func (r Repository) Close() {
 
 func (r Repository) HealthCheck() error {
 	if err := r.redis.Ping().Err(); err != nil {
-		return errors.New("redis is not responding")
+		return fmt.Errorf("redis is not responding")
 	}
 	if r.runErr != nil {
 		return r.runErr

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/PatrickKvartsaniy/print-me-at/models"
 	log "github.com/sirupsen/logrus"
@@ -67,10 +66,10 @@ func (s *Server) Close(ctx context.Context) {
 
 func (s *Server) HealthCheck() error {
 	if !s.readiness {
-		return errors.New("http service isn't ready yet")
+		return fmt.Errorf("http service isn't ready yet")
 	}
 	if s.runErr != nil {
-		return errors.New("http service: run issue")
+		return fmt.Errorf("http service: run issue: %w", s.runErr)
 	}
 	return nil
 }

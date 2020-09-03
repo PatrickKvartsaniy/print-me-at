@@ -1,7 +1,7 @@
 package health
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +13,7 @@ func TestServe_Error(t *testing.T) {
 	service := &Server{
 		checks: []Check{
 			func() error {
-				return errors.New("some err")
+				return fmt.Errorf("some err")
 			},
 		},
 	}
