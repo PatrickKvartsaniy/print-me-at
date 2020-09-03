@@ -43,3 +43,7 @@ service-up:
 service-down:
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans
 	$(DOCKER_COMPOSE) rm --force --stop -v
+
+.PHONY: mocks
+mocks:
+	go generate ./...

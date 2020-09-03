@@ -1,13 +1,7 @@
 version: '3.4'
 services:
-  redis:
-    image: redis:latest
-    ports:
-      - 6379:6379
   print-me-at:
     image: print-me-at:latest
-    environment:
-      - REDIS_ADDRESS=redis
     depends_on:
       - redis
     links:
@@ -22,3 +16,7 @@ services:
       retries: 100
       start_period: 40s
     restart: always
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379

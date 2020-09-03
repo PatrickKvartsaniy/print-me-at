@@ -14,7 +14,7 @@ func ReadOS() Config {
 
 	viper.SetDefault("REDIS_POLLING_INTERVAL", "1s")
 	viper.SetDefault("REDIS_KEY", "scheduled_messages")
-	viper.SetDefault("REDIS_ADDRESS", "0.0.0.0:6379")
+	viper.SetDefault("REDIS_ADDRESS", "redis:6379")
 
 	return Config{
 		Port: viper.GetInt("SERVER_PORT"),

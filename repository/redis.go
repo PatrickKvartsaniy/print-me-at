@@ -33,9 +33,9 @@ type (
 )
 
 func NewRedisRepository(cfg RedisConfig) *Repository {
-	logrus.Debug(cfg)
 	client := redis.NewClient(&redis.Options{
-		Addr: cfg.Addr,
+		Addr:       cfg.Addr,
+		MaxRetries: 3,
 	})
 	return &Repository{
 		redis:           client,

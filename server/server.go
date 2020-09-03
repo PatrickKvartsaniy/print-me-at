@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+//go:generate mockgen -source=server.go -destination=mock/repo.go -package=mock server/ Repository
 type Repository interface {
 	AddNewTask(msg models.Message) error
 	Poll(ctx context.Context)
